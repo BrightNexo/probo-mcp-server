@@ -1,0 +1,26 @@
+{
+  "name": "probo-mcp-server",
+  "version": "1.0.0",
+  "description": "MCP server for Probo API",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node test.js",
+    "client": "node client.js"
+  },
+  "keywords": [
+    "probo",
+    "mcp",
+    "api",
+    "print"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.7.0",
+    "axios": "^1.6.7",
+    "dotenv": "^16.4.5",
+    "zod": "^3.22.4"
+  }
+}

@@ -1,0 +1,175 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+
+
+# Method Definitions with API Endpoints
+
+- **init(config)**
+  - No API call. Initializes internal state:
+    - `proxy`: base URL for all API calls (e.g. `/api`).
+    - `language?`: ISO 639-1 language code (e.g. `en`).
+    - `priceType?`: price calculation type (e.g. `purchase_price`, `sales_price`).
+    - `overwrites?`: array of overwrite objects.
+    - `storeProductsLocally?`: boolean to cache product definitions in `sessionStorage`.
+
+- **getProducts(query?)**
+  - **Request:** GET `${proxy}/products${query ? `?search=${encodeURIComponent(query)}` : ''}`
+  - **Response:** `{ products: ProductInfo[] }`
+
+- **setProduct(code)**
+  - **Request:** POST `${proxy}/products/configure`
+    ```json
+    { "products": [ { "code": code } ] }
+    ```
+  - **Response:**
+    - `available_options[]`, `calculation_id`, `payload`, `products`, etc.
+    - Initializes `productConfig`, `productInfo`, `options`, `calculationId`, `payload`.
+
+- **getNextOption()**
+  - **Request:** POST `${proxy}/products/configure`
+    ```json
+    {
+      "products": [
+        {
+          "code": product.code,
+          "options": selectedOptions
+        }
+      ],
+      "deliveries"?: deliveriesArray,
+      "language"?: language,
+      "price_type"?: priceType,
+      "overwrites"?: overwrites
+    }
+    ```
+  - **Response:** updates `options`, `calculationId`, `payload`, `canOrder`, `prices`, etc.
+
+- **setOption(optionCode, value)**
+  - No API call. Adds or updates `{ code: optionCode, value }` in local `payload.products[0].options`.
+
+- **setOverwrites(overwrites[])**
+  - No API call. Merges `overwrites` into local payload for future `/configure` requests.
+
+- **setAddress(address)**
+  - No API call. Sets local `address` object used in `/configure` and `/price` calls.
+
+- **getProductPrice()**
+  - **Request:** POST `${proxy}/price`
+    ```json
+    {
+      "products": [payload.products],
+      "deliveries": [ { address } ],
+      "language": language,
+      "price_type": priceType
+    }
+    ```
+  - **Response:** `{ prices: { ... } }`
+
+- **getProductExcerpt()**
+  - No API call. Generates summary excerpt from last known `products` and `options`.
+
+- **getConfiguration() / getConfig()**
+  - No API call. Returns current full configuration object:
+    ```js
+    { products: payload.products, language, priceType, address?, overwrites? }
+    ```
+
+- **getRaw()**
+  - No API call. Returns raw JSON from the last `/configure` or `/price` response.
+
+- **needsUpload()**
+  - No API call. Checks last `payload` or `prices` for `calculation_id` requiring file uploads.
+
+- **getUploaderSession(callbackUrl)**
+  - **Request:** POST `${proxy}/products/uploader/create`
+    ```json
+    {
+      "calculation_id": calculationId,
+      "callback_url": callbackUrl,
+      "language": language
+    }
+    ```
+  - **Response:** `{ id: uploaderId, ... }`
+
+- **getUploaderData()**
+  - **Request:** GET `${proxy}/products/uploader/${uploaderId}`
+  - **Response:** `{ url: uploadUrl, fields: { ... } }`
+
+- **finish()**
+  - No API call. Finalizes state, emits `connectConfigurator:finished` event with `getResult()`.
+
+- **getResult()**
+  - No API call. Returns:
+    ```js
+    { excerpt: getProductExcerpt(), configuration: getConfiguration() }
+    ```
+
+- **clear()**
+  - No API call. Resets all internal state to initial values.
+
+- **openSearch()/closeSearch()/openConfigurator()/closeConfigurator()**
+  - No API calls. Toggles UI state (`openState`).
+
+- **setLanguage(lang)**
+  - No API call. Updates `language`; next `/configure` or `/price` call uses new language.
+
+- **setPriceType(type, includeVat?)**
+  - No API call. Updates `priceType` (e.g. `sales_price`), sets VAT inclusion flag.
+
+- **setStatuses(statuses)**
+  - No API call. Overrides backend status codes locally for testing scenarios.
+
+- **storeConfiguration(key, config?)**
+  - No API call. Persists named configuration in `localStorage` under `key`.
+
+- **updateConfiguration(key, config)**
+  - No API call. Updates existing stored configuration under `key`.
+
+- **setFromPayload(payload)**
+  - No API call. Loads `payload` into state; may trigger `/configure` to fetch next options.
+
+- **setOpenState(state)**
+  - No API call. Directly sets internal `openState` (`"search"`, `"configurator"`, or `"closed"`).
+
+# State Variables (window.connectConfigurator & Pinia store)
+
+- `initialized` (boolean)
+- `openState` (`"search"` | `"configurator"` | `"closed"`)
+- `searchBar.visible` (boolean)
+- `configuratorModal` (boolean)
+- `loading` (boolean)
+- `language` (string)
+- `priceType` (string)
+- `calculationId` (number|string)
+- `callbackUrl` (string)
+- `proxy` (string)
+- `product` (object|null)
+- `products` (array)
+- `productConfig` (object)
+- `productInfo` (object)
+- `options` (array)
+- `overwrites` (array)
+- `selectedProduct` (object|null)
+- `address` (object)
+- `deliveryOptions` (array)
+- `prices` (object)
+- `payload` (object)
+- `uploaders` (object)
+- `upload` (object)
+- `alert` (object|null)
+- `repository` (object)
+- `canOrder` (boolean)
+- `lastChangedIndex` (number)
+- `storeProductsLocally` (boolean)
+- `updateExternal` (function)
+- `version` (string)
+
+# References
+API endpoints documented at ProboDocs:
+- Configure: https://apidocs.proboprints.com/guides/flat-tree-validation ([apidocs.proboprints.com](https://apidocs.proboprints.com/guides/flat-tree-validation?utm_source=chatgpt.com))
+- Price: https://apidocs.proboprints.com/getting-started/insights-orderflow ([apidocs.proboprints.com](https://apidocs.proboprints.com/getting-started/insights-orderflow?utm_source=chatgpt.com))
+- Product search: https://apidocs.proboprints.com/examples/products ([apidocs.proboprints.com](https://apidocs.proboprints.com/examples/products))
+- Uploader: https://apidocs.proboprints.com/guides/uploader ([apidocs.proboprints.com](https://apidocs.proboprints.com/guides/uploader?utm_source=chatgpt.com))
+
