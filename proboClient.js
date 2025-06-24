@@ -9,6 +9,7 @@ import dotenv from 'dotenv';
 // Load environment variables
 dotenv.config();
 
+
 // Initialize API configuration from environment variables
 const PROBO_API_KEY = process.env.PROBO_API_KEY;
 const PROBO_API_URL = process.env.PROBO_API_URL || 'https://api.proboprints.com';
